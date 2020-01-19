@@ -40,8 +40,10 @@ class Hub:
                     words = await anagram_solver.find_words(re.sub(r'\s',"",b.group('letters')).lower())
                     for answer in words: 
                         await self.send_chat(answer)
-                        await asyncio.sleep(0.5)
+                        await asyncio.sleep(0.5) #needed ?
+                        await self.socket.recv()
                         resp = await self.socket.recv()
+
                         print(json.loads(resp)['data']['text'])
                         if json.loads(resp)['data']['from']['nick'] == '•GamesBot•':
                             b = re.search(r'^Here is a hint\:',json.loads(resp)['data']['text'])
