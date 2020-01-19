@@ -1,89 +1,178 @@
 import requests
 import json
+import websockets
+import asyncio
+import anagram_solver
+import re
 
-auth_user = ('nubular','\\')
+auth_user = ('nubular', '\\')
 
 header = {
-  'Content-Type': 'application/json'
+    'Content-Type': 'application/json'
 }
+
 
 class Hub:
 
-	def __init__(self,hub_url):
-		self.hub_url = hub_url
-		self.auth_token = self.create_session()
-		self.auth_header = {
-			"Authorization": self.auth_token,
-			'Content-Type': 'application/json'
-			}		
-		self.hub_id = self.get_hub_id(self.hub_url)
+    def __init__(self, hub_url):
+        self.socket = None
+        self.hub_url = hub_url
+        self.auth_token = None
+        self.auth_header = {"Authorization": self.auth_token,
+                            'Content-Type': 'application/json'}
+        self.hub_id = None
+
+    async def run(self):
+        await self.connect()
+        await self.create_session()
+        await self.get_hub_id()
+        self.populate_info()
+        await self.get_stats()
+        await  self.chat_event_listener()
+        print('listening for chat messages')
+        while True:
+            resp = await self.socket.recv()
+            print(json.loads(resp)['data']['text'])
+            if json.loads(resp)['data']['from']['nick'] == '•GamesBot•':
+                b = re.search(r'^Question \d+ of \d+\. The word is\:\s(?P<letters>(\w\s)+)',json.loads(resp)['data']['text'])
+                if b:
+                    print("Question: ",re.sub(r'\s',"",b.group('letters')).lower())
+                    words = await anagram_solver.find_words(re.sub(r'\s',"",b.group('letters')).lower())
+                    for answer in words: 
+                        await self.send_chat(answer)
+                        await asyncio.sleep(0.5)
+                        resp = await self.socket.recv()
+                        print(json.loads(resp)['data']['text'])
+                        if json.loads(resp)['data']['from']['nick'] == '•GamesBot•':
+                            b = re.search(r'^Here is a hint\:',json.loads(resp)['data']['text'])
+                            print(b)
+                            if b:
+                                continue
+                            else:
+                                break
+                        
+
+    async def chat_event_listener(self):
+        data = {
+            "method": "POST",
+            "path": "/hubs/{}/listeners/hub_message".format(self.hub_id),
+            "event": "hub_message",
+            "id": 1,
+            "data": {
+                "text": "e",
+                "severity": "info"
+            }
+        }
+
+        await self.socket.send(json.dumps(data))
+        
 
 
-	def create_session(self):
-		#telsu
-		data = {
-			"username" : "nubular",
-			"password" : "\\",
-			"max_inactivity": 60
-		}
-		url = 'http://localhost:5600/api/v1/sessions/authorize'
-		c = requests.post(url,headers = header, json = data).json()
-		try:
-			return c['auth_token']
-		except:
-			print(c)
-	def create_socket(self):
-		url = 'http://localhost:5600/api/v1/sessions/socket'
-		data = {
-			"auth_token" : self.auth_token
-		}
-		c = requests.post(url,headers = header, json = data).json()
-		print(c)
+    async def connect(self):
+        url = 'ws://localhost:5600/api/v1/'
+        self.socket = await websockets.connect(url)
+
+    async def create_session(self):
+        # telsu
+        data = {
+            "method": "POST",
+            "path": "/sessions/authorize",
+            "callback_id": 1,
+            "data": {
+                "username": "nubular",
+                "password": "\\"
+            }
+        }
+
+        await self.socket.send(json.dumps(data))
+        res = await self.socket.recv()
+        self.auth_token = json.loads(res)['data']['auth_token']
+        return self.auth_token
+
+    def populate_info(self):
+        self.auth_header = {"Authorization": self.auth_token,
+                            'Content-Type': 'application/json'}
+
+    async def get_session_info(self):
+        data = {
+            "method": "GET",
+            "path": "/sessions/self",
+            "callback_id": 1,
+        }
+        await self.socket.send(json.dumps(data))
+        res = await self.socket.recv()
+        print(res)
+
+    async def get_sessions(self):
+        data = {
+            "method": "GET",
+            "path": "/sessions",
+            "callback_id": 1,
+        }
+        await self.socket.send(json.dumps(data))
+        res = await self.socket.recv()
+        print(res)
+
+    async def get_stats(self):
+        data = {
+            "method": "GET",
+            "path": "/hubs/stats",
+            "callback_id": 1,
+        }
+        await self.socket.send(json.dumps(data))
+        res = await self.socket.recv()
+        print(res)
+
+    async def send_chat(self, message):
+        data = {
+            "method": "POST",
+            "path": "/hubs/chat_message",
+            "callback_id": 1,
+            "data": {
+                "text": message,
+                "hub_urls": [self.hub_url]
+            }
+        }
+        await self.socket.send(json.dumps(data))
+        res = await self.socket.recv()
+        print(res)
+
+    def recv_chat(self, max_count):
+        url = 'http://localhost:5600/api/v1/hubs/{}/messages/{}'.format(
+            self.hub_id, max_count)
+        data = {
+            "method": "GET",
+            "path": "/hubs/{}/messages/{}".format(self.hub_id, max_count),
+            "callback_id": 1,
+        }
+        c = requests.get(url, headers=self.auth_header)
+        parsed = json.loads(c.text)
+        print(json.dumps(parsed, indent=4))
+
+    async def get_hub_id(self):
+        data = {
+            "method": "POST",
+            "path": "/hubs/find_by_url",
+            "callback_id": 1,
+            "data": {
+                "hub_url": self.hub_url
+            }
+        }
+        await self.socket.send(json.dumps(data))
+        res = await self.socket.recv()
+        self.hub_id = json.loads(res)['data']['id']
+
+    # def message_event_listener(self):
+    #     url = 'http://localhost:5600/api/v1/hubs/{}/listeners/hub_message'.format(
+    #         self.hub_id)
+    #     c = requests.post(url, headers=self.auth_header)
+    #     print(c.text)
 
 
-	def get_session_info(self):
-		url = 'http://localhost:5600/api/v1/sessions/self'
-		c = requests.get(url,headers = self.auth_header).json()
-		print(c)
+async def main():
+    hub = Hub("192.168.0.4")
+    await hub.run()
 
-	def get_sessions(self):
-		url = 'http://localhost:5600/api/v1/sessions'
-		c = requests.get(url,headers = self.auth_header).json()
-		print(c)
 
-	def get_stats(self):
-		url = 'http://localhost:5600/api/v1/hubs/stats'
-		c = requests.get(url,headers = self.auth_header)
-		parsed = json.loads(c.text)
-		print(json.dumps(parsed, indent = 4))
-
-	def send_chat(self,message):
-		url = 'http://localhost:5600/api/v1/hubs/chat_message'
-		data ={
-			"text" : message,
-			"third_person" : False,
-			"hub_urls": [
-				"172.16.48.114"
-			]
-		}
-		c = requests.post(url,headers = self.auth_header, json = data)
-		print(c.text)
-
-	def recv_chat(self,max_count):
-		url = 'http://localhost:5600/api/v1/hubs/{}/messages/{}'.format(self.hub_id,max_count)
-		c = requests.get(url,headers = self.auth_header)
-		parsed = json.loads(c.text)
-		print(json.dumps(parsed, indent = 4))
-
-	def get_hub_id(self,hub_url):
-		url = 'http://localhost:5600/api/v1/hubs/find_by_url'
-		data = {
-			"hub_url" : hub_url
-		}
-		c = requests.post(url,headers = self.auth_header, json = data).json()
-		return c['id']
-	
-	def message_event_listener(self):
-		url = 'http://localhost:5600/api/v1/hubs/{}/listeners/hub_message'.format(self.hub_id)
-		c = requests.post(url,headers = self.auth_header)
-		print(c.text)
+if __name__ == "__main__":
+    asyncio.get_event_loop().run_until_complete(main())

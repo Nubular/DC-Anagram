@@ -3,7 +3,7 @@ import sys
 from stuff import word_set
 
 
-def find_possible(lst):
+async def find_possible(lst):
     """
     Return all possible combinations of letters in lst
 
@@ -21,7 +21,7 @@ def find_possible(lst):
     return returned_list
 
 
-def return_words(lst, word_set):
+async def return_words(lst, word_set):
     """
     Return combinations in that are words in word_set
 
@@ -39,7 +39,7 @@ def return_words(lst, word_set):
     return returned_list
 
 
-def find_words(word):
+async def find_words(word):
     """
     Main function to run the program
     """
@@ -49,16 +49,15 @@ def find_words(word):
     for char in anagram:
         anagram_lst.append(char)
 
-    possible_words = find_possible(anagram_lst)
-    actual_words = return_words(possible_words, word_set)
-
-    print('Solutions:')
+    possible_words = await find_possible(anagram_lst)
+    actual_words = await return_words(possible_words, word_set)
+    answer = []
     if len(actual_words) == 0:
         print('None found')
+        answer.append('None Found')
+        return answer
     else:
         for item in set(actual_words):
             # Running through in set form prevents duplicates
-            print(item)
- 
-
-find_words('dunsay')
+            answer.append(item)
+        return answer
