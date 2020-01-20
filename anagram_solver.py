@@ -1,6 +1,7 @@
 import itertools
 import sys
-from stuff import word_set
+from stuff import word_dict
+import asyncio
 
 
 async def find_possible(lst):
@@ -21,7 +22,7 @@ async def return_words(lst, word_set):
     returned_list = []
 
     for word in lst:
-        if word in word_set or word.capitalize() in word_set:
+        if word in word_dict[len(word)] or word.capitalize() in word_dict[len(word)]:
             # Some words are capitalized in the word_set
             returned_list.append(word)
 
@@ -37,7 +38,7 @@ async def find_words(word):
         anagram_lst.append(char)
 
     possible_words = await find_possible(anagram_lst)
-    actual_words = await return_words(possible_words, word_set)
+    actual_words = await return_words(possible_words, word_dict)
     answer = []
     if len(actual_words) == 0:
         print('None found')
@@ -48,3 +49,4 @@ async def find_words(word):
             # Running through in set form prevents duplicates
             answer.append(item)
         return answer
+
