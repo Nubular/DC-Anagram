@@ -4,12 +4,7 @@ from stuff import word_set
 
 
 async def find_possible(lst):
-    """
-    Return all possible combinations of letters in lst
 
-    @type lst: [str]
-    @rtype: [str]
-    """
     returned_list = []
     for subset in itertools.permutations(lst,len(lst)):
         possible = ''
@@ -22,13 +17,7 @@ async def find_possible(lst):
 
 
 async def return_words(lst, word_set):
-    """
-    Return combinations in that are words in word_set
 
-    @type lst: [str]
-    @type word_set: set(str)
-    @rtype: [str]
-    """
     returned_list = []
 
     for word in lst:
@@ -40,9 +29,7 @@ async def return_words(lst, word_set):
 
 
 async def find_words(word):
-    """
-    Main function to run the program
-    """
+
     anagram_lst = []
     anagram = word
     
