@@ -164,11 +164,6 @@ class Hub:
         res = await self.socket.recv()
         self.hub_id = json.loads(res)['data']['id']
 
-    # def message_event_listener(self):
-    #     url = 'http://localhost:5600/api/v1/hubs/{}/listeners/hub_message'.format(
-    #         self.hub_id)
-    #     c = requests.post(url, headers=self.auth_header)
-    #     print(c.text)
 
 
 async def main():

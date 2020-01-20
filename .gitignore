@@ -1,1 +1,4 @@
 airdcpp.apib
+__pycache__/*
+.vscode/*
+words.txt
