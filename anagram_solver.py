@@ -16,13 +16,26 @@ async def find_possible(lst):
  
     return returned_list
 
+def binary_search_string(word,lst):
+    lower = 0
+    upper = len(lst) - 1
+    while(lower<=upper):
+        mid = (lower + upper)//2
+        midpoint = lst[mid]
+        if midpoint > word:
+            upper = mid - 1
+        elif midpoint < word:
+            lower = mid + 1
+        elif lst[mid] == word:
+            return True
+    return False
 
 async def return_words(lst, word_set):
 
     returned_list = []
 
     for word in lst:
-        if word in word_dict[len(word)] or word.capitalize() in word_dict[len(word)]:
+        if binary_search_string(word,word_dict[len(word)]) or  binary_search_string(word.capitalize(),word_dict[len(word)]):
             # Some words are capitalized in the word_set
             returned_list.append(word)
 
