@@ -2,39 +2,37 @@ import itertools
 import sys
 from word_set import word_set
 import asyncio
- 
-async def return_words(freq):
-    returned_list = []
-    for string in word_set:
+
+dictionary = {}
+
+def make_dict():
+    for word in word_set:
         word_freq = [0]*26
-        flag=True
-        for char in string:
+        for char in word:
             if(char>='a' and char <='z'):
                 word_freq[ord(char)-ord('a')]+=1
             elif(char>='A' and char <='Z'):
                 word_freq[ord(char)-ord('A')]+=1
-            else:
-                flag=False
-                break
-        if word_freq==freq and flag:
-            returned_list.append(string)
-    return returned_list
-
-
-async def find_words(word):
-
-
-    anagram = word
-    freq = [0]*26
-    
-    for char in anagram:
-        if(char>='a' and char <='z'):
-            freq[ord(char)-ord('a')]+=1
+        key = tuple(word_freq)
+        if not key in dictionary:
+            dictionary[key] = [word]
         else:
-            freq[ord(char)-ord('A')]+=1
+            dictionary[key].append(word)
 
+async def find_words(anagram):
 
-    actual_words = await return_words(freq)
+    word = anagram
+    word_freq = [0]*26
+    for char in word:
+        if(char>='a' and char <='z'):
+            word_freq[ord(char)-ord('a')]+=1
+        elif(char>='A' and char <='Z'):
+            word_freq[ord(char)-ord('A')]+=1
+    try:
+        actual_words = dictionary[tuple(word_freq)]
+    except:
+        actual_words = []
+
     answer = []
     if len(actual_words) == 0:
         print('None found')
@@ -47,9 +45,9 @@ async def find_words(word):
         return answer
 
 async def main():
-    words = await find_words("aergon")
-    for string in words:
-        print(string)
+    make_dict()
+    words = await find_words("yunta")
+    print(words)
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()

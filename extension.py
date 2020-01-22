@@ -168,7 +168,8 @@ class Hub:
 
 
 async def start(url):
-    print(url)
+    print("Making Dict")
+    anagram_solver.make_dict()
     hub = Hub(url)
     await hub.run()
 
