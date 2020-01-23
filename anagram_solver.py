@@ -2,9 +2,24 @@ import itertools
 import sys
 from word_set import word_set
 import asyncio
+import pickle
 
 dictionary = {}
 
+def pickle_data():
+    make_dict()
+    f = open('pickle','ab')
+    pickle.dump(dictionary,f)
+    f.close()
+    return
+
+def load_pickle():
+    f = open('pickle','rb')
+    global dictionary
+    dictionary = pickle.load(f)
+    f.close()
+    return
+# Keep in case things break
 def make_dict():
     for word in word_set:
         word_freq = [0]*26
@@ -20,7 +35,6 @@ def make_dict():
             dictionary[key].append(word)
 
 async def find_words(anagram):
-
     word = anagram
     word_freq = [0]*26
     for char in word:
@@ -45,8 +59,8 @@ async def find_words(anagram):
         return answer
 
 async def main():
-    make_dict()
-    words = await find_words("yunta")
+    load_pickle()
+    words = await find_words("daythurs")
     print(words)
 
 if __name__ == "__main__":
