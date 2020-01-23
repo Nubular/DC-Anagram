@@ -1,5 +1,5 @@
 # DC-Anagram
-DC++ Anagram Solver
+AirDC++ Anagram Solver
 
 Bot which plays the anagram game on certain DC++ hubs.
 Note:
